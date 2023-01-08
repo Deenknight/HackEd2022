@@ -20,7 +20,7 @@ class Custom_Window:
 
         self.drivers = []
 
-        self.chapters_screen("chainsaw-man")
+        self.downloads_screen()
 
     # def __del__(self):
     #     rmtree(self.path+r"\temp")
@@ -33,6 +33,17 @@ class Custom_Window:
             os.makedirs(fr"{self.path}\{folder}")
 
     
+    def change_screen(self, new_screen):
+        match new_screen:
+            case "main":
+                pass
+            case "reader":
+                pass
+            case "chapter":
+                pass
+            case "downloads":
+                pass
+
     def chapters_screen(self, title):
         
         
@@ -93,6 +104,8 @@ class Custom_Window:
     def chapters_to_reading(self, url, title, chapter):
         pass
 
+
+    
     def downloads_screen(self):
         # elements on window in a grid format
         images = []
@@ -116,7 +129,7 @@ class Custom_Window:
                 images[i] = ImageTk.PhotoImage(images[i])
 
                 self.button.append(tkinter.Button(self.master, image=images[i], 
-                    command=lambda title=filename.split('.'): self.downloads_to_reading(title[0]), borderwidth=0))
+                    command=lambda title=filename.split('.'), new_screen="reader": self.change_from_downloads(title[0], new_screen), borderwidth=0))
                 
                 self.button[i].image = images[i]
 
@@ -147,7 +160,8 @@ class Custom_Window:
 
         return image.resize((width, height), Image.ANTIALIAS)
 
-    def downloads_to_reading(self, title):
+
+    def change_from_downloads(self, title, new_screen):
 
         
         for i in range(len(self.button)):
@@ -156,20 +170,185 @@ class Custom_Window:
         self.button.clear()
 
         print(title)
+        if new_screen == "reader":
+            self.reading_screen(title, "chapter-46", 46, 46)
+        
 
-        self.reading_screen()
 
 
+    def reading_screen(self, title, chapter, num_of_chapters, chapter_number=1):
 
-    def reading_screen(self):
-        self.button = tkinter.Button(self.master, text="Click me to go back", 
-                    command=self.reading_to_downloads, borderwidth=0)
-        self.button.pack()
+        # assign reading information
+        self.page = 1
+        self.chapter_number = chapter_number
+        self.chapter = chapter
+        self.num_of_pages = 36
+        self.num_of_chapters = num_of_chapters
+        self.buttons = []
+        
+        # create instance of image
+        img = self.image_process(self.page, self.chapter, title)
+
+        # page number
+        self.pagelabel = customtkinter.CTkLabel(master=self.master, text=f"{self.page}/{self.num_of_pages}")
+        self.pagelabel.pack(pady=3)
+
+        # placement of image onto window
+        self.img_frame = tkinter.Label(image=img)
+        self.img_frame.image = img
+        self.img_frame.pack(pady=5)
+
+        # buttons
+        self.prevB = customtkinter.CTkButton(
+            master=self.master, text="<", command=lambda: self.page_next(title))
+        self.prevB.pack()
+
+        self.nextB = customtkinter.CTkButton(
+            master=self.master, text=">", command=lambda: self.page_prev(title))
+        self.nextB.pack(pady=5)
+
+        # keybinds
+        self.master.bind('<Right>', lambda event: self.page_prev(title))
+        self.master.bind('<Left>', lambda event: self.page_next(title))
+        
+        
+        def toggle_win():
+            f1=tkinter.Frame(self.master, width=300, height=1080, bg='#12c4c0')
+            f1.place(x=0, y=0)
+
+            def buttons(x,y,text,bcolor,fcolor,cmd):
+            
+                def on_entera(e):
+                    myButton1['background'] = bcolor #ffcc66
+                    myButton1['foreground']= '#262626'  #000d33
+
+                def on_leavea(e):
+                    myButton1['background'] = fcolor
+                    myButton1['foreground']= '#262626'
+
+                button_font = tkinter.font.Font(family='Comic Sans MS', size=16, weight='bold')
+                myButton1 = tkinter.Button(f1,text=text, width=40, height=2, fg='#262626', font=button_font, border=0, bg=fcolor, activeforeground='#262626', activebackground=bcolor, command=cmd)
+                
+                #Adds the hover effect to the buttons when the mouse is over them
+                myButton1.bind("<Enter>", on_entera)
+                myButton1.bind("<Leave>", on_leavea)
+
+                myButton1.place(x=x,y=y)
+
+            buttons(-115, 125,'Main Menu','#0f9d9a','#12c4c0',None)
+            buttons(-115, 200,'Chapters','#0f9d9a','#12c4c0',None)
+            buttons(-115, 275,'Downloads','#0f9d9a','#12c4c0',None)
+
+
+            def retract_win():
+                f1.destroy()
+
+            img2_open = Image.open(self.path+r"\close_image.png")
+            img2_resize = img2_open.resize((100, 100))
+            self.img2 = ImageTk.PhotoImage(img2_resize)
+
+            self.buttons.append(tkinter.Button(f1, image=self.img2, command=retract_win, border=0, activebackground='#12c4c0', bg='#12c4c0').place(x=-5, y=-4))
+
+
+        img1_open = Image.open(self.path+r"\hamburger_image.png")
+        img1_resize = img1_open.resize((80, 80))
+        self.img1 = ImageTk.PhotoImage(img1_resize)
+
+        self.buttons.append(tkinter.Button(self.master, image = self.img1, border = 0, command=toggle_win).place(x=5, y=10))
+    
+    def change_from_reader(self, new_screen):
+        # savedata
+
+        # clearing window elements
+        self.pagelabel.destroy()
+        self.img_frame.destroy()
+        self.prevB.destroy()
+        self.nextB.destroy()
+
+        self.img1.destroy()
+        self.img2.destroy()
+
+        for i in range(len(self.buttons)):
+            self.buttons[i].destroy()
+
+        self.buttons.clear()
+
+
+        # selecting which screen to switch to
+        self.change_screen(new_screen)
+
+
+    def image_process(self, page, chapter, title):
+        image = Image.open(self.path+fr"\manga\{title}\{chapter}\{page}.png")
+        width, height = image.size
+        h = 903
+        ratio = h/height  # making size of images a consistant height
+        w = int(width*ratio)
+
+        resized = image.resize((w, h), Image.ANTIALIAS)
+        return ImageTk.PhotoImage(resized)
+
+    def page_prev(self, title):
+        
+        self.page -= 1
+
+        if self.page == 0 and self.chapter_number-1 == 0:
+            self.page = 1
+
+        if self.page < 1 and self.chapter_number > 1:
+            self.change_chapters(0, title)
+
+        self.reload_page(title)
+
+
+    def page_next(self, title):
+ 
+        self.page += 1
+        if self.page >self.num_of_pages and self.chapter_number+1 > self.num_of_chapter:
+            self.page = self.num_of_pages
+
+        if self.page > self.num_of_pages and self.chapter_number < self.num_of_chapters:
+            self.change_chapters(1, title)
+
+        self.reload_page(title)
+
+    def change_chapters(self,mode, title):
+        if mode == 1:
+            self.page = 1
+            self.chapter_number += 1
+        elif mode == 0:
+            self.page = self.num_of_pages
+            self.chapter_number -= 1
+
+        dir_path = self.path+fr"\manga\{title}\{self.chapter}"
+        self.num_of_pages = len(os.listdir(dir_path))
+
+
+    def reload_page(self, title):
+        self.master.title(f"Chapter {self.chapter}")
+        newImage = self.image_process(self.page, self.chapter, title)
+        self.img_frame.configure(image=newImage)
+        self.img_frame.image = newImage
+        self.pagelabel.configure(text=f"{self.page}/{self.num_of_pages}")
+
+
 
     def reading_to_downloads(self):
         self.button.destroy()
         
         self.downloads_screen()
+
+
+
+
+
+
+
+    
+
+    
+
+
 
 
 if __name__ == "__main__":
