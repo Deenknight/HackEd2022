@@ -7,10 +7,20 @@ import os
 class Custom_Window:
 
     def __init__(self, master, path, web_scraper):
+
         self.master = master
         self.path = path
         self.web_scraper = web_scraper
+        
+        self.make_dir("manga")
+        self.make_dir("covers")
+
         self.downloads_screen()
+
+    def make_dir(self, folder):
+        if not os.path.exists(fr"{self.path}\{folder}"):
+            os.makedirs(fr"{self.path}\{folder}")
+
 
         
     
@@ -24,9 +34,8 @@ class Custom_Window:
 
         # indexer to keep track of images for the grid
         i = 0
-        
 
-        for filename in os.listdir(self.path):
+        for filename in os.listdir(fr"{self.path}\covers"):
             f = os.path.join(self.path,filename)
             if os.path.isfile(f):
 

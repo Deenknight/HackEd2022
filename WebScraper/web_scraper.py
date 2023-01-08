@@ -1,7 +1,7 @@
-from manga_downloader import download_manga
-from manga_cover import get_cover
-from chapter_scraper import find_chapters
-from title_finder import external_search, get_manga_list
+from .manga_downloader import download_manga
+from .manga_cover import get_cover
+from .chapter_scraper import find_chapters
+from .title_finder import external_search, get_manga_list
 
 
 def download_manga(driver, url, title, chapter, path):
