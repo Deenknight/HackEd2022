@@ -6,5 +6,6 @@ import os
 
 path = os.path.dirname(__file__)
 
-
 gui.run(web_scraper, path)
+
+    

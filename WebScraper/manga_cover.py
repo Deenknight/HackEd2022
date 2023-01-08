@@ -4,7 +4,7 @@ from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.firefox.options import Options
 import os
 
-def get_cover(driver, url, title, path = os.path.dirname(__file__)):
+def download_cover(driver, url, title, path = os.path.dirname(__file__)):
     """
     Downloads the cover page to a manga_cover folder
     
@@ -21,8 +21,6 @@ def get_cover(driver, url, title, path = os.path.dirname(__file__)):
     
 
 def take_screenshots(driver: webdriver.Firefox, path: str, title):
-    if not os.path.exists(path):
-        os.makedirs(path)
 
     body = driver.find_element(by=By.XPATH, value='//*[@id="cover"]/div[1]/img')
     body.screenshot(f"{path}\\{title}.png")
@@ -39,6 +37,6 @@ if __name__ == "__main__":
 
     website = "https://mangabuddy.com/youkoso-jitsuryoku-shijou-shugi-no-kyoushitsu-e"
     title = "youkoso-jitsuryoku-shijou-shugi-no-kyoushitsu-e"
-    get_cover(driver, website, title)
+    download_cover(driver, website, title)
 
     driver.close()

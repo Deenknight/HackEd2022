@@ -2,6 +2,7 @@ import tkinter
 import customtkinter
 from PIL import Image, ImageTk
 import os
+from shutil import rmtree
 
 
 class Custom_Window:
@@ -14,16 +15,83 @@ class Custom_Window:
         
         self.make_dir("manga")
         self.make_dir("covers")
+        self.make_dir("temp\covers")
+        self.make_dir("temp\manga")
 
-        self.downloads_screen()
+        self.drivers = []
+
+        self.chapters_screen("chainsaw-man")
+
+    # def __del__(self):
+    #     rmtree(self.path+r"\temp")
+    #     for i in range(len(self.drivers)):
+    #         self.web_scraper.delete_driver(self.drivers[i])
+
 
     def make_dir(self, folder):
         if not os.path.exists(fr"{self.path}\{folder}"):
             os.makedirs(fr"{self.path}\{folder}")
 
+    
+    def chapters_screen(self, title):
+        
+        
+        url = fr"https://mangabuddy.com/{title}"
+
+        if os.path.exists(fr"{self.path}\manga\{title}"):
+            path = self.path
+        else:
+            path = self.path+r"\temp"
+
+            
+            # NOTE could be changed to trevor's multithreading but its kinda necessary to load this 
+            # before continuing with the code
+            driver = self.web_scraper.create_driver()
+
+            self.web_scraper.get_cover(driver, url, title, path+r"\covers")            
+
+            self.web_scraper.delete_driver(driver)
 
         
-    
+        chapters_dict = self.web_scraper.load_chapters(url)
+
+        for file in os.listdir(path+r"\covers"):
+            if file.startswith(title):
+                filename = file
+
+
+        self.title_image = Image.open(os.path.join(self.path, "covers", filename))
+
+        w = 500
+        h = 800
+
+        screen_elements = []
+
+        self.title_image = ImageTk.PhotoImage(
+            self.resize_with_aspect_ratio(self.title_image, w, h))
+
+
+
+        label = tkinter.Label(self.master, image=self.title_image)
+        label.grid(row=0, column=0) 
+        label.grid_rowconfigure(0, weight=5)
+
+
+        i = 0
+        nc = 5
+
+        for chapter in chapters_dict:
+
+            screen_elements.append(tkinter.Button(self.master, text=chapter, fg="#ff0000",
+                command=lambda url=chapters_dict[chapter], title=title, chapter=chapter:
+                self.chapters_to_reading(url, title, chapter)))
+
+            screen_elements[-1].grid(row=1+i//nc, column=1+i%nc)
+
+            i += 1
+
+    def chapters_to_reading(self, url, title, chapter):
+        pass
 
     def downloads_screen(self):
         # elements on window in a grid format
@@ -35,8 +103,8 @@ class Custom_Window:
         # indexer to keep track of images for the grid
         i = 0
 
-        for filename in os.listdir(fr"{self.path}\covers"):
-            f = os.path.join(self.path,filename)
+        for filename in os.listdir(os.path.join(self.path, "covers")):
+            f = os.path.join(self.path, "covers", filename)
             if os.path.isfile(f):
 
                 images.append(Image.open(f))
@@ -90,10 +158,8 @@ class Custom_Window:
         print(title)
 
         self.reading_screen()
-    
-    def chapter_screen(self, title):
-        
-        pass
+
+
 
     def reading_screen(self):
         self.button = tkinter.Button(self.master, text="Click me to go back", 

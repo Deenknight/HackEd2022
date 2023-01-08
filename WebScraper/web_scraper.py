@@ -1,8 +1,15 @@
 from .manga_downloader import download_manga
-from .manga_cover import get_cover
+from .manga_cover import download_cover
 from .chapter_scraper import find_chapters
 from .title_finder import external_search, get_manga_list
 
+from selenium import webdriver
+from webdriver_manager.firefox import GeckoDriverManager
+from selenium.webdriver.firefox.service import Service as FirefoxService
+from selenium.webdriver.common.by import By
+from selenium.webdriver.firefox.options import Options
+from selenium.common.exceptions import TimeoutException
+import os
 
 def download_manga(driver, url, title, chapter, path):
     """
@@ -27,16 +34,18 @@ def get_cover(driver, url, title, path):
     path: directory to save the path. Set to the working directory by default
     """
 
-    get_cover(driver, url, title, path)
+    download_cover(driver, url, title, path)
 
-def find_chapters(url):
+def load_chapters(url):
     """
     Heres the run down for whoever uses this. Put link into, 
     function returns dictionary of {ChpTitle: Url}
 
     url: url to the website's main page
     """
-    find_chapters(url)
+    chapters_dict = find_chapters(url)
+
+    return chapters_dict
 
 def find_titles(driver, url, user_search_input, manga_list) -> dict:
     """
@@ -61,8 +70,21 @@ def find_titles(driver, url, user_search_input, manga_list) -> dict:
 
     return manga_list    
 
+def create_driver():
+    path = os.path.dirname(__file__)
+    option = Options()
+    option.headless = False
+    driver = webdriver.Firefox(options=option, service=FirefoxService(
+        GeckoDriverManager().install()))  # make firefox browser
 
+    adblockPath = path+"\\ublock_origin-1.44.4.xpi"
+    driver.install_addon(adblockPath)
 
+    return driver
+
+def delete_driver(driver):
+    driver.close()
+    del driver
 
 if __name__ == "__main__":
     pass
