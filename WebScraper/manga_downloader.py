@@ -34,12 +34,10 @@ def download_manga(driver, url, title, chapter, path = os.path.dirname(__file__)
 
 
 def download_images(chapter_folder, images):
-    if not os.path.exists(chapter_folder):
-        os.makedirs(chapter_folder)
 
     index = 0
     for image in images:
-        image_file = open(f"{chapter_folder}\\{index}.png", 'wb')
+        image_file = open(fr"{chapter_folder}\{index}.png", 'wb')
         image_file.write(image.screenshot_as_png)
         image_file.close()
         index += 1
@@ -62,7 +60,7 @@ if __name__ == "__main__":
 
     url = "https://mangabuddy.com/the-eminence-in-shadow/chapter-46"
     title = "the-eminence-in-shadow"
-    chapter = 46
+    chapter = "chapter-46"
     path = os.path.dirname(__file__)
 
     download_manga(driver, url, title, chapter)

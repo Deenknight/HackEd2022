@@ -1,0 +1,9 @@
+geckodriver.log
+GUI/tkinter_window.py
+GUI/__pycache__/tkinter_window.cpython-310.pyc
+GUI/__pycache__/gui.cpython-310.pyc
+WebScraper/__pycache__/chapter_scraper.cpython-310.pyc
+WebScraper/__pycache__/manga_cover.cpython-310.pyc
+WebScraper/__pycache__/manga_downloader.cpython-310.pyc
+WebScraper/__pycache__/title_finder.cpython-310.pyc
+WebScraper/__pycache__/web_scraper.cpython-310.pyc
