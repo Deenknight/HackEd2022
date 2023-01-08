@@ -1,7 +1,7 @@
-import manga_downloader as mgd
-import manga_cover as mgc
-import chapter_scraper as cs
-import title_finder as tf
+from manga_downloader import download_manga
+from manga_cover import get_cover
+from chapter_scraper import find_chapters
+from title_finder import external_search, get_manga_list
 
 
 def download_manga(driver, url, title, chapter, path):
@@ -15,7 +15,7 @@ def download_manga(driver, url, title, chapter, path):
     path: directory to save the path. Set to the working directory by default
     """
     
-    mgd.download_manga(driver, url, title, chapter, path)
+    download_manga(driver, url, title, chapter, path)
 
 def get_cover(driver, url, title, path):
     """
@@ -27,7 +27,7 @@ def get_cover(driver, url, title, path):
     path: directory to save the path. Set to the working directory by default
     """
 
-    mgc.get_cover(driver, url, title, path)
+    get_cover(driver, url, title, path)
 
 def find_chapters(url):
     """
@@ -36,7 +36,7 @@ def find_chapters(url):
 
     url: url to the website's main page
     """
-    cs.find_chapters(url)
+    find_chapters(url)
 
 def find_titles(driver, url, user_search_input, manga_list) -> dict:
     """
@@ -55,9 +55,9 @@ def find_titles(driver, url, user_search_input, manga_list) -> dict:
         print("url does not exist")
 
         
-    tf.external_search(driver, user_search_input)
+    external_search(driver, user_search_input)
 
-    manga_list = tf.get_manga_list(driver, manga_list)
+    manga_list = get_manga_list(driver, manga_list)
 
     return manga_list    
 
