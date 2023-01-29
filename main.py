@@ -1,5 +1,16 @@
-from GUI import gui
-from WebScraper import web_scraper
+
+import customtkinter
+from Custom_Window import Custom_Window
 
 
-gui.run(web_scraper)
+
+root = customtkinter.CTk()
+root.geometry("720x1280")
+root.state('zoomed')
+root.title("test")
+
+Custom_Window(root)
+
+
+root.mainloop()
+
