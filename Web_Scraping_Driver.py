@@ -43,11 +43,11 @@ class Web_Scraping_Driver(webdriver.Firefox):
         chapter_img_container = self.find_element(By.XPATH, '//*[@id="chapter-images"]')
         chapter_images = chapter_img_container.find_elements(By.CLASS_NAME, "chapter-image")
 
-        self.download_images(path, chapter_images)
+        self._download_images(path, chapter_images)
 
-    def download_images(self, chapter_folder, images):
+    def _download_images(self, chapter_folder, images):
 
-        index = 0
+        index = 1
         for image in images:
             image_file = open(fr"{chapter_folder}\{index}.png", 'wb')
             image_file.write(image.screenshot_as_png)
@@ -97,7 +97,8 @@ class Web_Scraping_Driver(webdriver.Firefox):
                 titleTag = litag.find('a').get('title')
                 link = litag.find('a').get('href')
                 if 'https' not in link:
-                    link = "https://mangabuddy.com"+link  # honestly might fuck shit later
+                    link = "mangabuddy.com/"+link  # honestly might fuck shit later
+                    link =  'https://' + link.replace('//', '/') # necessary if the linktag already leads with a /
                 chapter_dict[titleTag[titleTag.find('Chapter'):]] = link
         '''
         YES I KNOW THAT 2 FOR LOOPS IS REALLY STUPID BUT FOR SOME REASON 
@@ -122,11 +123,11 @@ class Web_Scraping_Driver(webdriver.Firefox):
         
         search_box.send_keys(user_search_input)
 
-        manga_dict = self.get_manga_dict()
+        manga_dict = self._get_manga_dict()
 
         return manga_dict    
     
-    def get_manga_dict(self) -> dict:
+    def _get_manga_dict(self) -> dict:
         """
         Gets all the titles that pop up in the searchbar
         

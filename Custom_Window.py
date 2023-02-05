@@ -9,36 +9,46 @@ from shutil import rmtree
 class Custom_Window:
 
     def __init__(self, master):
-        
+        # connect the window to the root
         self.master = master
 
+        # declare directories to download images and use assets/utilities
         main_path = os.path.dirname(__file__)
         self.img_path = os.path.join(main_path, "img")
         self.assets_path = os.path.join(main_path, "assets")
         adblock_path = os.path.join(main_path, "utils", "ublock_origin-1.44.4.xpi")
 
+        #NOTE change this to create its own thread or smth with multi-threading
         self.driver = Web_Scraping_Driver(adblock_path, False)
         self.main_site = "https://mangabuddy.com/"
 
+        # create folders if they aren't already there
         self.make_dir("manga")
         self.make_dir("covers")
         self.make_dir("temp\covers")
         self.make_dir("temp\manga")
 
-        self.change_screen("main") #NOTE change this line to do funky stuff
+        self.change_screen("main") 
         
-    # TODO check if this works, and if not make it delete the temp folder
-    def __del__(self):
-        rmtree(self.img_path+r"\temp")
-        del self.driver
 
 
     def make_dir(self, folder):
+        """
+        Creates folders from the window's image path if they don't exist yet
+
+        folder: name of the folder
+        """
         if not os.path.exists(fr"{self.img_path}\{folder}"):
             os.makedirs(fr"{self.img_path}\{folder}")
 
     
     def change_screen(self, new_screen):
+        """
+        Changes the user's screen to one of the presets based off of the new_screen tag
+
+        new_screen: either 'main', 'reader', 'chapters', or 'downloads'
+        #NOTE this function will exit with a message if new_screen is an invalid screen tag
+        """
         match new_screen:
             case "main":
                 self.main_screen()
@@ -52,25 +62,29 @@ class Custom_Window:
                 exit("Something terrible has gone wrong")
 
     def main_screen(self):
+        
 
         def submit(list_box : tk.Listbox):
             '''Extracts Manga Titles from the dictionary returned by the
             extneral_search function'''
             print("button clicked!")
             search_query = self.input.get()
-            self.titles = self.driver.find_titles(self.main_site, search_query)
+            titles = self.driver.find_titles(self.main_site, search_query)
             # external_search(webdriver.Firefox, search_query)
 
             
-            result_list = list(self.titles.keys())
+            titles_list = list(titles.keys())
 
-            for i in range(len(result_list)):
-                print(result_list[i])
+            for i in range(len(titles_list)):
+                print(titles_list[i])
 
-            search_results(result_list, list_box, len(result_list))
+            search_results(titles_list, list_box, len(titles_list))
 
 
         def search_results(items, list_box : tk.Listbox, num_items):
+            """
+            Adds the search results to the listbox
+            """
             if(num_items > 0):
                 list_box.delete(0, 'end')
 
@@ -78,18 +92,31 @@ class Custom_Window:
                     list_box.insert("end", i)
 
         def select(list_box : tk.Listbox):
+            """
+            Selection for each item in the listbox
+            """
             selection = list_box.curselection()
 
             # FIXME this works for most titles, but we might want to set it up 
             # so that the link is automatically taken from each title into a
-            # dictionary of some sort
+            # dictionary of some sort because some urls are slightly different than
+            # just the title appended to the main page url
             self.title = list_box.get(selection).lower().replace(' ', '-')
 
             if selection:
                 self.change_from_main("chapters")
+
+        def quit():
+            """
+            Exits the program after deleting the temp folder
+            """
+            rmtree(self.img_path+r"\temp")
+            del self.driver
+
+            self.master.quit()
                             
 
-
+        #input 
         self.input = tk.StringVar(self.master, "Search Manga...")
         
 
@@ -124,20 +151,21 @@ class Custom_Window:
 
         self.entry = ctk.CTkEntry(self.left_frame, textvariable=self.input, font=("Comic Sans MS", 15))
         self.entry.bind("<Button-1>", lambda e: self.entry.delete(0, tk.END))
-        
-        self.entry.pack(padx=20, pady=10)
+        self.entry.bind("<Return>", lambda e: submit(self.my_listbox))
 
-        # TODO set it up so clicking ENTER on the search button searches
+        self.entry.pack(padx=20, pady=10)
+        
         self.search_button = ctk.CTkButton(self.left_frame, command= lambda: submit(self.my_listbox), text="Submit", anchor= "bottom", font=("Comic Sans MS", 15))
         self.search_button.pack(pady=10)
+        
 
-        self.read_button = ctk.CTkButton(self.left_frame, command=lambda new_screen="reader": self.change_from_main("reader"), text="Reader", anchor= "bottom", font=("Comic Sans MS", 15))
+        self.read_button = ctk.CTkButton(self.left_frame, command=lambda: self.change_from_main("reader"), text="Reader", anchor= "bottom", font=("Comic Sans MS", 15))
         self.read_button.pack(pady=10)
 
-        self.download_button = ctk.CTkButton(self.left_frame, command=lambda new_screen="downloads": self.change_from_main("downloads"), text="Downloads", anchor= "bottom", font=("Comic Sans MS", 15))
+        self.download_button = ctk.CTkButton(self.left_frame, command=lambda: self.change_from_main("downloads"), text="Downloads", anchor= "bottom", font=("Comic Sans MS", 15))
         self.download_button.pack(pady=10)
 
-        self.quit_button = ctk.CTkButton(self.left_frame, command=self.master.quit, text="Quit", anchor= "bottom", font=("Comic Sans MS", 15))
+        self.quit_button = ctk.CTkButton(self.left_frame, command=quit, text="Quit", anchor= "bottom", font=("Comic Sans MS", 15))
         self.quit_button.pack(pady=10)
 
         #NOTE: ***TO GET length of listbox: listbox.size()
@@ -172,12 +200,14 @@ class Custom_Window:
 
         if os.path.exists(fr"{self.img_path}\manga\{self.title}"):
             path = os.path.join(self.img_path, "covers")
+            self.temp = False
         else:
+            self.temp = True
             path = os.path.join(self.img_path, "temp", "covers")
             self.driver.get_cover(url, self.title, path)            
 
 
-        chapters_dict = self.driver.load_chapters(url)
+        self.chapters_dict = self.driver.load_chapters(url)
 
         for file in os.listdir(path):
             if file.startswith(self.title):
@@ -197,8 +227,6 @@ class Custom_Window:
         self.title_image_label = ctk.CTkLabel(self.left_frame, image=title_image, text="")
         self.title_image_label.pack()
 
-        
-
         #right frame
         self.right_frame = ctk.CTkFrame(self.master, width=500, height=450)
         self.right_frame.pack(side='right', pady=50, expand=True)
@@ -217,9 +245,8 @@ class Custom_Window:
 
         self.my_listbox.pack(side='bottom', padx=100,pady=50)
 
-        self.num_of_chapters = len(chapters_dict)
-
-        self.chapter_names = list(chapters_dict.keys())
+        self.chapter_names = list(self.chapters_dict.keys())
+        self.chapter_names.reverse()
 
         def select(list_box : tk.Listbox):
             selection = list_box.curselection()
@@ -229,10 +256,9 @@ class Custom_Window:
             # dictionary of some sort
 
             chapter_name = list_box.get(selection)
+            self.chapter_num = self.chapter_names.index(chapter_name)
 
-            url = chapters_dict[chapter_name]
-
-            self.change_from_chapter("reader", url, chapter_name)
+            self.change_from_chapter("reader")
 
         self.my_listbox.delete(0, 'end')
 
@@ -240,13 +266,11 @@ class Custom_Window:
             self.my_listbox.insert("end", chapter)
 
     
-    def change_from_chapter(self, new_screen, url, chapter_name):
-        self.url = url
-        self.chapter_name = chapter_name
+    def change_from_chapter(self, new_screen):
+        
         
         # delete all elements used in the tkinter window
         self.left_frame.destroy()
-        self.title_image_label.destroy()
         self.right_frame.destroy()
         self.list_scroll.destroy()
         self.my_listbox.destroy()
@@ -257,43 +281,75 @@ class Custom_Window:
 
     def reading_screen(self):
 
-        # assign reading information
-        # TODO make this use the ADT from julian
+        # TODO change a lot of these global variables to just local ones if possible
+        def download_pages():
+            self.chapter_path = os.path.join(path, str(self.chapter_num))
 
-        self.page = 1
-        self.chapter_num = 46
-        self.self.chapter_name = "chapter-46"
-       
-        dir_path = self.img_path+fr"\manga\{self.title}\{self.self.chapter_name}"
-        self.num_of_pages = len(os.listdir(dir_path))
+            chapter_name = self.chapter_names[self.chapter_num]
 
-        self.buttons = []
-        
-        # create instance of image
-        img = self.image_process(self.page, self.self.chapter_name)
+            url = self.chapters_dict[chapter_name]
+            # create the directory if not there
+            if not os.path.exists(self.chapter_path):
+                os.makedirs(self.chapter_path)
+                self.driver.download_manga(url, self.chapter_path)
 
-        # page number
-        self.pagelabel = ctk.CTkLabel(master=self.master, text=f"{self.page}/{self.num_of_pages}")
-        self.pagelabel.pack(pady=3)
 
-        # placement of image onto window
-        self.img_frame = tk.Label(image=img)
-        self.img_frame.image = img
-        self.img_frame.pack(pady=5)
 
-        # buttons
-        self.prevB = ctk.CTkButton(
-            master=self.master, text="<", command=lambda: self.page_next())
-        self.prevB.pack()
+            self.num_of_pages = len(os.listdir(self.chapter_path))
+            self.master.title(f"{chapter_name}")
+            
 
-        self.nextB = ctk.CTkButton(
-            master=self.master, text=">", command=lambda: self.page_prev())
-        self.nextB.pack(pady=5)
+        def image_process():
+            image = Image.open(os.path.join(self.chapter_path, f"{self.page}.png"))
+            width, height = image.size
+            h = 903
+            ratio = h/height  # making size of images a consistant height
+            w = int(width*ratio)
 
-        # keybinds
-        self.master.bind('<Right>', lambda event: self.page_prev())
-        self.master.bind('<Left>', lambda event: self.page_next())
-        
+            resized = image.resize((w, h), Image.ANTIALIAS)
+            return ImageTk.PhotoImage(resized)
+
+        def page_prev():
+            
+            self.page -= 1
+
+            if self.page == 0:
+                if self.chapter_num == 0:
+                    self.page = 1
+                else:
+                    change_chapters(0)
+
+            reload_page()
+
+
+        def page_next():
+    
+            self.page += 1
+            if self.page >self.num_of_pages:
+                if self.chapter_num+1 == num_of_chapters:
+                    self.page = self.num_of_pages
+                else:
+                    change_chapters(1)
+                    
+            reload_page()        
+
+
+        def change_chapters(mode):
+            if mode == 1:
+                self.chapter_num += 1
+                download_pages()
+                self.page = 1
+            elif mode == 0:
+                self.chapter_num -= 1
+                download_pages()
+                self.page = self.num_of_pages
+
+
+        def reload_page():
+            newImage = image_process()
+            self.img_frame.configure(image=newImage)
+            self.img_frame.image = newImage
+            self.pagelabel.configure(text=f"{self.page}/{self.num_of_pages}")
         
         def toggle_win():
             f1=tk.Frame(self.master, width=300, height=1080, bg='#12c4c0')
@@ -317,37 +373,89 @@ class Custom_Window:
                 myButton1.bind("<Leave>", on_leavea)
 
                 myButton1.place(x=x,y=y)
+                #   self.buttons.append(myButton1)
 
-            self.buttons.append(buttons(-115, 125,'Main Menu','#0f9d9a','#12c4c0',lambda new_screen="main": self.change_from_reader(new_screen)))
-            self.buttons.append(buttons(-115, 200,'Chapters','#0f9d9a','#12c4c0',lambda new_screen="chapter": self.change_from_reader(new_screen)))
-            self.buttons.append(buttons(-115, 275,'Downloads','#0f9d9a','#12c4c0',lambda new_screen="downloads": self.change_from_reader(new_screen)))
+            buttons(-115, 125,'Main Menu','#0f9d9a','#12c4c0',lambda new_screen="main": clear_and_change(new_screen))
+            buttons(-115, 200,'Chapters','#0f9d9a','#12c4c0',lambda new_screen="chapters": clear_and_change(new_screen))
+            buttons(-115, 275,'Downloads','#0f9d9a','#12c4c0',lambda new_screen="downloads": clear_and_change(new_screen))
 
+            self.side_screens.append(f1)
 
             def retract_win():
+                for widget in f1.winfo_children():
+                    widget.destroy()
+                f1.place_forget()
                 f1.destroy()
+
+            def clear_and_change(new_screen):
+                retract_win()
+                self.change_from_reader(new_screen)
+
 
             img2_open = Image.open(self.assets_path+r"\close_image.png")
             img2_resize = img2_open.resize((100, 100))
             self.img2 = ImageTk.PhotoImage(img2_resize)
 
-            self.buttons.append(tk.Button(f1, image=self.img2, command=retract_win, border=0, activebackground='#12c4c0', bg='#12c4c0').place(x=-5, y=-4))
+            tk.Button(f1, image=self.img2, command=retract_win, border=0, activebackground='#12c4c0', bg='#12c4c0').place(x=-5, y=-4)
+            
 
+        # assign reading information
+        # TODO make this use the ADT from julian
+
+        num_of_chapters = len(self.chapter_names)
+
+        # set up the path to be in temp or not
+        if self.temp:
+            path = os.path.join(self.img_path, "temp", "manga", self.title)
+            
+        else:
+            path = os.path.join(self.img_path, "manga", self.title)
+
+
+        download_pages()
+        self.side_screens = []
+        
+
+        self.page = 1
+        # create instance of image
+        img = image_process()
+
+        # page number
+        self.pagelabel = ctk.CTkLabel(master=self.master, text=f"{self.page}/{self.num_of_pages}")
+        self.pagelabel.pack(pady=3)
+
+        # placement of image onto window
+        self.img_frame = tk.Label(image=img)
+        self.img_frame.image = img
+        self.img_frame.pack(pady=5)
+
+        # buttons
+        self.prevB = ctk.CTkButton(
+            master=self.master, text="<", command=lambda: page_next())
+        self.prevB.pack()
+
+        self.nextB = ctk.CTkButton(
+            master=self.master, text=">", command=lambda: page_prev())
+        self.nextB.pack(pady=5)
+
+        # keybinds
+        self.master.bind('<Right>', lambda event: page_prev())
+        self.master.bind('<Left>', lambda event: page_next())
+        
+        # TODO refactor this so that it is local to the reader
 
         img1_open = Image.open(self.assets_path+r"\hamburger_image.png")
         img1_resize = img1_open.resize((80, 80))
         self.img1 = ImageTk.PhotoImage(img1_resize)
 
-        self.buttons.append(tk.Button(self.master, image = self.img1, border = 0, command=toggle_win).place(x=5, y=10))
+        tk.Button(self.master, image = self.img1, border = 0, command=toggle_win, name="menu_button").place(x=5, y=10)
+        
     
     def change_from_reader(self, new_screen):
         # savedata
-
-        for i in range(len(self.buttons)):
-            self.buttons[i].destroy()
-
-        self.buttons.clear()
+        self.master.nametowidget("menu_button").place_forget()
+        self.master.nametowidget("menu_button").destroy()
         
-        # clearing window elements
         self.pagelabel.destroy()
         self.img_frame.destroy()
         self.prevB.destroy()
@@ -355,63 +463,6 @@ class Custom_Window:
 
         # selecting which screen to switch to
         self.change_screen(new_screen)
-
-
-    # TODO refactor this so that it is local to the reader
-
-    def image_process(self, page, chapter):
-        image = Image.open(self.img_path+fr"\manga\{self.title}\{chapter}\{page}.png")
-        width, height = image.size
-        h = 903
-        ratio = h/height  # making size of images a consistant height
-        w = int(width*ratio)
-
-        resized = image.resize((w, h), Image.ANTIALIAS)
-        return ImageTk.PhotoImage(resized)
-
-    def page_prev(self):
-        
-        self.page -= 1
-
-        if self.page == 0 and self.chapter_number-1 == 0:
-            self.page = 1
-
-        if self.page < 1 and self.chapter_number > 1:
-            self.change_chapters(0)
-
-        self.reload_page()
-
-
-    def page_next(self):
- 
-        self.page += 1
-        if self.page >self.num_of_pages and self.chapter_number+1 > self.num_of_chapter:
-            self.page = self.num_of_pages
-
-        if self.page > self.num_of_pages and self.chapter_number < self.num_of_chapters:
-            self.change_chapters(1)
-
-        self.reload_page()
-
-    def change_chapters(self,mode):
-        if mode == 1:
-            self.page = 1
-            self.chapter_number += 1
-        elif mode == 0:
-            self.page = self.num_of_pages
-            self.chapter_number -= 1
-
-        dir_path = self.img_path+fr"\manga\{self.title}\{self.self.chapter_name}"
-        self.num_of_pages = len(os.listdir(dir_path))
-
-
-    def reload_page(self):
-        self.master.title(f"Chapter {self.self.chapter_name}")
-        newImage = self.image_process(self.page, self.self.chapter_name)
-        self.img_frame.configure(image=newImage)
-        self.img_frame.image = newImage
-        self.pagelabel.configure(text=f"{self.page}/{self.num_of_pages}")
-
 
 
     def downloads_screen(self):
@@ -437,15 +488,12 @@ class Custom_Window:
             driver.download_manga(driver, url, "kingdom", 1, path)            
 
         
-        chapters_dict = self.web_scraper.load_chapters(url)
+        self.chapters_dict = self.web_scraper.load_chapters(url)
 
         # indexer to keep track of images for the grid
-        
 
         self.buttons.append(tk.Button(self.master, command=lambda new_screen="main": self.change_from_downloads(new_screen)))
-
         i = 0
-
         for filename in os.listdir(os.path.join(self.img_path, "covers")):
             f = os.path.join(self.img_path, "covers", filename)
             if os.path.isfile(f):
@@ -505,11 +553,6 @@ class Custom_Window:
 
 
     
-
-    
-
-
-
 
 if __name__ == "__main__":
     # tk elements
