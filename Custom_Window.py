@@ -13,7 +13,8 @@ class Custom_Window:
         self.master = master
 
         main_path = os.path.dirname(__file__)
-        self.path = os.path.join(main_path, "img")
+        self.img_path = os.path.join(main_path, "img")
+        self.assets_path = os.path.join(main_path, "assets")
         adblock_path = os.path.join(main_path, "utils", "ublock_origin-1.44.4.xpi")
 
         self.driver = Web_Scraping_Driver(adblock_path, False)
@@ -28,13 +29,13 @@ class Custom_Window:
         
     # TODO check if this works, and if not make it delete the temp folder
     def __del__(self):
-        rmtree(self.path+r"\temp")
+        rmtree(self.img_path+r"\temp")
         del self.driver
 
 
     def make_dir(self, folder):
-        if not os.path.exists(fr"{self.path}\{folder}"):
-            os.makedirs(fr"{self.path}\{folder}")
+        if not os.path.exists(fr"{self.img_path}\{folder}"):
+            os.makedirs(fr"{self.img_path}\{folder}")
 
     
     def change_screen(self, new_screen):
@@ -83,9 +84,6 @@ class Custom_Window:
             # so that the link is automatically taken from each title into a
             # dictionary of some sort
             self.title = list_box.get(selection).lower().replace(' ', '-')
-
-            
-            
 
             if selection:
                 self.change_from_main("chapters")
@@ -172,10 +170,10 @@ class Custom_Window:
         
         url = fr"https://mangabuddy.com/{self.title}"
 
-        if os.path.exists(fr"{self.path}\manga\{self.title}"):
-            path = os.path.join(self.path, "covers")
+        if os.path.exists(fr"{self.img_path}\manga\{self.title}"):
+            path = os.path.join(self.img_path, "covers")
         else:
-            path = os.path.join(self.path, "temp", "covers")
+            path = os.path.join(self.img_path, "temp", "covers")
             self.driver.get_cover(url, self.title, path)            
 
 
@@ -214,14 +212,10 @@ class Custom_Window:
         self.my_listbox = tk.Listbox(self.right_frame, width=150, height=150, font=("Comic Sans MS", 40), yscrollcommand= self.list_scroll.set)
         self.my_listbox.bind('<Double-1>', lambda e: select(self.my_listbox))
 
-
         self.list_scroll.config(command=self.my_listbox.yview)
         self.list_scroll.pack(side='right', fill='y')
 
-        
         self.my_listbox.pack(side='bottom', padx=100,pady=50)
-
-
 
         self.num_of_chapters = len(chapters_dict)
 
@@ -270,7 +264,7 @@ class Custom_Window:
         self.chapter_num = 46
         self.self.chapter_name = "chapter-46"
        
-        dir_path = self.path+fr"\manga\{self.title}\{self.self.chapter_name}"
+        dir_path = self.img_path+fr"\manga\{self.title}\{self.self.chapter_name}"
         self.num_of_pages = len(os.listdir(dir_path))
 
         self.buttons = []
@@ -332,14 +326,14 @@ class Custom_Window:
             def retract_win():
                 f1.destroy()
 
-            img2_open = Image.open(self.path+r"\close_image.png")
+            img2_open = Image.open(self.assets_path+r"\close_image.png")
             img2_resize = img2_open.resize((100, 100))
             self.img2 = ImageTk.PhotoImage(img2_resize)
 
             self.buttons.append(tk.Button(f1, image=self.img2, command=retract_win, border=0, activebackground='#12c4c0', bg='#12c4c0').place(x=-5, y=-4))
 
 
-        img1_open = Image.open(self.path+r"\hamburger_image.png")
+        img1_open = Image.open(self.assets_path+r"\hamburger_image.png")
         img1_resize = img1_open.resize((80, 80))
         self.img1 = ImageTk.PhotoImage(img1_resize)
 
@@ -366,7 +360,7 @@ class Custom_Window:
     # TODO refactor this so that it is local to the reader
 
     def image_process(self, page, chapter):
-        image = Image.open(self.path+fr"\manga\{self.title}\{chapter}\{page}.png")
+        image = Image.open(self.img_path+fr"\manga\{self.title}\{chapter}\{page}.png")
         width, height = image.size
         h = 903
         ratio = h/height  # making size of images a consistant height
@@ -407,7 +401,7 @@ class Custom_Window:
             self.page = self.num_of_pages
             self.chapter_number -= 1
 
-        dir_path = self.path+fr"\manga\{self.title}\{self.self.chapter_name}"
+        dir_path = self.img_path+fr"\manga\{self.title}\{self.self.chapter_name}"
         self.num_of_pages = len(os.listdir(dir_path))
 
 
@@ -430,15 +424,15 @@ class Custom_Window:
 
         url = fr"https://mangabuddy.com/kingdom/vol-1-chapter-1-the-unknown-boy"
 
-        if os.path.exists(fr"{self.path}\manga\kingdom\1"):
-            path = self.path
+        if os.path.exists(fr"{self.img_path}\manga\kingdom\1"):
+            path = self.img_path
         else:
-            path = self.path+r"\temp"
+            path = self.img_path+r"\temp"
 
             
             # NOTE could be changed to trevor's multithreading but its kinda necessary to load this 
             # before continuing with the code
-            driver = Web_Scraping_Driver(self.path)
+            driver = Web_Scraping_Driver(self.img_path)
 
             driver.download_manga(driver, url, "kingdom", 1, path)            
 
@@ -452,8 +446,8 @@ class Custom_Window:
 
         i = 0
 
-        for filename in os.listdir(os.path.join(self.path, "covers")):
-            f = os.path.join(self.path, "covers", filename)
+        for filename in os.listdir(os.path.join(self.img_path, "covers")):
+            f = os.path.join(self.img_path, "covers", filename)
             if os.path.isfile(f):
 
                 images.append(Image.open(f))
