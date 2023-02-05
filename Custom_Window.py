@@ -7,6 +7,9 @@ from shutil import rmtree
 
 
 class Custom_Window:
+    # NOTE a lot of the variables in the screens are class variables, but 
+    # i think you only have to use a class variable for the tkinter objects
+    # so the data variables could be changed to be local
 
     def __init__(self, master):
         # connect the window to the root
@@ -18,7 +21,7 @@ class Custom_Window:
         self.assets_path = os.path.join(main_path, "assets")
         adblock_path = os.path.join(main_path, "utils", "ublock_origin-1.44.4.xpi")
 
-        #NOTE change this to create its own thread or smth with multi-threading
+        # NOTE change this to create its own thread or smth with multi-threading
         self.driver = Web_Scraping_Driver(adblock_path, False)
         self.main_site = "https://mangabuddy.com/"
 
@@ -116,8 +119,7 @@ class Custom_Window:
             self.master.quit()
                             
 
-        #input 
-        self.input = tk.StringVar(self.master, "Search Manga...")
+       
         
 
         #left frame
@@ -149,15 +151,16 @@ class Custom_Window:
         self.search_text = ctk.CTkLabel(self.left_frame, width=200, height=300, text="E-Reader", font=("Comic Sans MS", 30))
         self.search_text.pack(pady=15)
 
+        #input 
+        self.input = tk.StringVar(self.master, "Search Manga...")
         self.entry = ctk.CTkEntry(self.left_frame, textvariable=self.input, font=("Comic Sans MS", 15))
         self.entry.bind("<Button-1>", lambda e: self.entry.delete(0, tk.END))
         self.entry.bind("<Return>", lambda e: submit(self.my_listbox))
-
         self.entry.pack(padx=20, pady=10)
         
+        #left frame buttons
         self.search_button = ctk.CTkButton(self.left_frame, command= lambda: submit(self.my_listbox), text="Submit", anchor= "bottom", font=("Comic Sans MS", 15))
         self.search_button.pack(pady=10)
-        
 
         self.read_button = ctk.CTkButton(self.left_frame, command=lambda: self.change_from_main("reader"), text="Reader", anchor= "bottom", font=("Comic Sans MS", 15))
         self.read_button.pack(pady=10)
@@ -168,8 +171,8 @@ class Custom_Window:
         self.quit_button = ctk.CTkButton(self.left_frame, command=quit, text="Quit", anchor= "bottom", font=("Comic Sans MS", 15))
         self.quit_button.pack(pady=10)
 
-        #NOTE: ***TO GET length of listbox: listbox.size()
-        #NOTE: get(ANCHOR) would be used for making the search results functional when you click them**
+        # NOTE: ***TO GET length of listbox: listbox.size()
+        # NOTE: get(ANCHOR) would be used for making the search results functional when you click them**
         # ...left_frame, command= lambda: submit(whatever u need to pass, items(?), button(?))
 
     def change_from_main(self, new_screen):
@@ -192,12 +195,15 @@ class Custom_Window:
     
 
     def chapters_screen(self):
-
-        # TODO allow users to download manga to non-temp storage, which will need 
+        # TODO add an exit button to head back to the main menu / downloads screen
+        # TODO allow users to download manga to non-temp storage
+        # idk whats the best way to make that look is tho :/
+        # FIXME the chapter scraper doesn't get all the chapters if there are too many
+        # Kingdom has like 700 chapters and it only loaded the first 12 and the last like 80 for some reason
+        # idk i dont get it
         
-        
+        # get the url and decide whether to use temporary or non-temp folders
         url = fr"https://mangabuddy.com/{self.title}"
-
         if os.path.exists(fr"{self.img_path}\manga\{self.title}"):
             path = os.path.join(self.img_path, "covers")
             self.temp = False
@@ -209,20 +215,22 @@ class Custom_Window:
 
         self.chapters_dict = self.driver.load_chapters(url)
 
+        # get the filename of the chapter
         for file in os.listdir(path):
             if file.startswith(self.title):
-                filename = file
+                cover_filename = file
 
         
         # TODO add the name of the title above or below the chapter image
-        # TODO add an exit button to head back to the main menu
+        # NOTE this is just straight ripped off of the main menu so it could definitely
+        # be changed to look better
         #left frame
         self.left_frame = ctk.CTkFrame(self.master, width=500)# NOTE: corners become square when the corner_radius = 0 
         # left_frame['padding'] = 100
         self.left_frame.pack(side='left', padx=50, expand=True)
         
         # create and display the title image
-        title_image = Image.open(os.path.join(path, filename))
+        title_image = Image.open(os.path.join(path, cover_filename))
         title_image = ImageTk.PhotoImage(title_image.resize((225, 337), Image.ANTIALIAS))
         self.title_image_label = ctk.CTkLabel(self.left_frame, image=title_image, text="")
         self.title_image_label.pack()
@@ -245,16 +253,14 @@ class Custom_Window:
 
         self.my_listbox.pack(side='bottom', padx=100,pady=50)
 
+        # getting the chapter names
         self.chapter_names = list(self.chapters_dict.keys())
+
+        # reversing the order because otherwise chapter 0 is the newest chapter
         self.chapter_names.reverse()
 
         def select(list_box : tk.Listbox):
             selection = list_box.curselection()
-
-            # FIXME this works for most titles, but we might want to set it up 
-            # so that the link is automatically taken from each title into a
-            # dictionary of some sort
-
             chapter_name = list_box.get(selection)
             self.chapter_num = self.chapter_names.index(chapter_name)
 
@@ -281,21 +287,32 @@ class Custom_Window:
 
     def reading_screen(self):
 
-        # TODO change a lot of these global variables to just local ones if possible
+        # NOTE a lot of the class variables here could be local
+        # TODO save the reader's data when the leave
+        
+
         def download_pages():
+            """
+            Uses the webdriver to download the manga pages if the directory does
+            not exist
+            """
+
             self.chapter_path = os.path.join(path, str(self.chapter_num))
-
             chapter_name = self.chapter_names[self.chapter_num]
-
             url = self.chapters_dict[chapter_name]
-            # create the directory if not there
+
+            # create the directory if not there, and run the webscraper
             if not os.path.exists(self.chapter_path):
                 os.makedirs(self.chapter_path)
+
+                # TODO change to multithreading
                 self.driver.download_manga(url, self.chapter_path)
 
 
 
             self.num_of_pages = len(os.listdir(self.chapter_path))
+
+            # rename the window
             self.master.title(f"{chapter_name}")
             
 
@@ -352,6 +369,10 @@ class Custom_Window:
             self.pagelabel.configure(text=f"{self.page}/{self.num_of_pages}")
         
         def toggle_win():
+            """
+            Sidebar menu toggle
+            """
+
             f1=tk.Frame(self.master, width=300, height=1080, bg='#12c4c0')
             f1.place(x=0, y=0)
 
@@ -379,8 +400,6 @@ class Custom_Window:
             buttons(-115, 200,'Chapters','#0f9d9a','#12c4c0',lambda new_screen="chapters": clear_and_change(new_screen))
             buttons(-115, 275,'Downloads','#0f9d9a','#12c4c0',lambda new_screen="downloads": clear_and_change(new_screen))
 
-            self.side_screens.append(f1)
-
             def retract_win():
                 for widget in f1.winfo_children():
                     widget.destroy()
@@ -388,7 +407,11 @@ class Custom_Window:
                 f1.destroy()
 
             def clear_and_change(new_screen):
+                # NOTE if we're going to add reader data saving, here would probably be best
+
                 retract_win()
+                self.master.nametowidget("menu_button").place_forget()
+                self.master.nametowidget("menu_button").destroy()
                 self.change_from_reader(new_screen)
 
 
@@ -400,7 +423,7 @@ class Custom_Window:
             
 
         # assign reading information
-        # TODO make this use the ADT from julian
+        # TODO make this use the ADT from julian - idk where it is :/
 
         num_of_chapters = len(self.chapter_names)
 
@@ -413,9 +436,6 @@ class Custom_Window:
 
 
         download_pages()
-        self.side_screens = []
-        
-
         self.page = 1
         # create instance of image
         img = image_process()
@@ -429,6 +449,7 @@ class Custom_Window:
         self.img_frame.image = img
         self.img_frame.pack(pady=5)
 
+        # FIXME anyone with a NORMAL SCREEN SIZE has the previous button off the screen
         # buttons
         self.prevB = ctk.CTkButton(
             master=self.master, text="<", command=lambda: page_next())
@@ -441,8 +462,6 @@ class Custom_Window:
         # keybinds
         self.master.bind('<Right>', lambda event: page_prev())
         self.master.bind('<Left>', lambda event: page_next())
-        
-        # TODO refactor this so that it is local to the reader
 
         img1_open = Image.open(self.assets_path+r"\hamburger_image.png")
         img1_resize = img1_open.resize((80, 80))
@@ -452,16 +471,13 @@ class Custom_Window:
         
     
     def change_from_reader(self, new_screen):
-        # savedata
-        self.master.nametowidget("menu_button").place_forget()
-        self.master.nametowidget("menu_button").destroy()
+        
         
         self.pagelabel.destroy()
         self.img_frame.destroy()
         self.prevB.destroy()
         self.nextB.destroy()
 
-        # selecting which screen to switch to
         self.change_screen(new_screen)
 
 

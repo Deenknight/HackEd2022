@@ -92,6 +92,8 @@ class Web_Scraping_Driver(webdriver.Firefox):
         # parse the text using the lxml parser
         soup = BeautifulSoup(html_text.text, 'lxml')
 
+        # FIXME if you print out the ultag in a debugger you'll see that not all chapters
+        # are in it. We might have to load the chapters in with selenium
         for ultag in soup.find_all('ul', {'class': 'chapter-list'}):
             for litag in ultag.find_all('li'):
                 titleTag = litag.find('a').get('title')
