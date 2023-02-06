@@ -1,1 +1,1 @@
-idk how to make a readme
+Comic reading application
